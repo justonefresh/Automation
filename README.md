@@ -1,6 +1,6 @@
 # Article monitor PoC
 
-This project scrapes an authorized webpage with `curl_cffi`. GitHub Actions runs the scraper automatically every hour and can also run it manually, saving each result as an HTML artifact.
+This project scrapes an authorized webpage with `curl_cffi`. GitHub Actions runs the scraper at 100 privately selected times per UTC day and can also run it manually, saving each result as an HTML artifact.
 
 ## Local use
 
@@ -17,4 +17,6 @@ python scrape.py https://example.com --scroll --output scrape-result.html
 
 ## GitHub Actions
 
-Create a repository variable named `TARGET_URL` containing the authorized URL. The scheduled workflow runs one scrape hourly and uploads one HTML page per execution as the `scrape-results` artifact. Start it manually from the **Actions** tab with a URL and an execution count, or use the scheduled repository variable.
+For automatic runs, create a repository variable named `TARGET_URL` containing the authorized URL. In GitHub, open **Settings > Secrets and variables > Actions > Variables > New repository variable** and set the name to `TARGET_URL`. The workflow checks every five minutes and selects 100 times per UTC day using an HMAC-based schedule. For a private, harder-to-predict schedule, add an optional repository secret named `SCHEDULE_SEED` under **Settings > Secrets and variables > Actions > Secrets**. Use a long random value. Unselected checks exit without scraping.
+
+The workflow still supports manual runs from the **Actions** tab with a URL and an execution count. Manual runs always execute and do not wait for a random slot. Each selected or manual run uploads the `scrape-results` artifact; open `index.html` from it to see every run number, total scrape count, URL, and success status.
