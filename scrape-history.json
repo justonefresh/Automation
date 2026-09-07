@@ -398,5 +398,13 @@
     "total": 50,
     "url": "https://askfirst.ai/en-s87775",
     "status": "Succeeded"
+  },
+  {
+    "executed_at": "2026-09-07T08:01:50.493028+00:00",
+    "workflow_run": "8",
+    "execution": "1",
+    "total": 1,
+    "url": "https://askfirst.ai/en-s87775",
+    "status": "Succeeded"
   }
 ]
