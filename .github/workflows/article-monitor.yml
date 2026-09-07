@@ -1,5 +1,12 @@
 name: Article scraper
 
+permissions:
+  contents: write
+
+concurrency:
+  group: scrape-main
+  cancel-in-progress: false
+
 on:
   schedule:
     # Check every five minutes; the gate selects 100 slots randomly per UTC day.
@@ -57,62 +64,32 @@ jobs:
               failures=$((failures + 1))
             fi
           done
-          python - <<'PY'
-          import html
-          import os
-          from pathlib import Path
-
-          results_dir = Path("scrape-results")
-          total = int(os.environ["EXECUTIONS"])
-          rows = []
-          for status_file in sorted(
-              results_dir.glob("status-*.txt"),
-              key=lambda path: int(path.stem.split("-")[1]),
-          ):
-              run_number = status_file.stem.split("-")[1]
-              status = status_file.read_text(encoding="utf-8")
-              status_class = "success" if status == "Succeeded" else "failure"
-              rows.append(
-                  f"<tr><td>{run_number}</td><td>{total}</td>"
-                  f"<td>{html.escape(os.environ['TARGET_URL'])}</td>"
-                  f'<td class="{status_class}">{status}</td></tr>'
-              )
-
-          succeeded = sum(
-              status_file.read_text(encoding="utf-8") == "Succeeded"
-              for status_file in results_dir.glob("status-*.txt")
-          )
-          report = f"""<!doctype html>
-          <html lang="en">
-          <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1">
-            <title>Scrape results</title>
-            <style>
-              body {{ font-family: system-ui, sans-serif; margin: 2rem auto; max-width: 1100px; padding: 0 1rem; }}
-              table {{ border-collapse: collapse; width: 100%; }}
-              th, td {{ border: 1px solid #bbb; padding: .6rem; text-align: left; }}
-              th {{ background: #eee; }}
-              .success {{ color: #16803c; font-weight: 700; }}
-              .failure {{ color: #c62828; font-weight: 700; }}
-            </style>
-          </head>
-          <body>
-            <h1>Scrape results</h1>
-            <p>{succeeded} of {total} scrapes succeeded.</p>
-            <table>
-              <thead><tr><th>Run</th><th>Total scrapes</th><th>URL</th><th>Status</th></tr></thead>
-              <tbody>{''.join(rows)}</tbody>
-            </table>
-          </body>
-          </html>
-          """
-          (results_dir / "index.html").write_text(report, encoding="utf-8")
-          PY
           exit "$failures"
+      - name: Update committed HTML report
+        if: always() && steps.random_slot.outputs.run == 'true'
+        run: |
+          python update_report.py \
+            --url "$TARGET_URL" \
+            --workflow-run "${{ github.run_number }}" \
+            --total "$EXECUTIONS"
+      - name: Commit report to main
+        if: always() && steps.random_slot.outputs.run == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html scrape-history.json
+          if git diff --cached --quiet; then
+            echo "No report changes to commit."
+          else
+            git commit -m "Update scrape results"
+            git push origin HEAD:main
+          fi
       - name: Upload scrape results
         if: always() && steps.random_slot.outputs.run == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: scrape-results
-          path: scrape-results/
+          path: |
+            index.html
+            scrape-history.json
+            scrape-results/
