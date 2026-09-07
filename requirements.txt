@@ -1,0 +1,2 @@
+playwright>=1.50,<2
+curl_cffi>=0.13,<1
