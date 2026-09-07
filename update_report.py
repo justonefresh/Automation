@@ -46,32 +46,85 @@ def update_report(
             f"<td>{html.escape(entry['workflow_run'])}</td>"
             f"<td>{html.escape(entry['execution'])} of {entry['total']}</td>"
             f"<td>{html.escape(entry['url'])}</td>"
-            f'<td class="{status_class}">{html.escape(entry["status"])}</td>'
+            f'<td><span class="status {status_class}">{html.escape(entry["status"])}</span></td>'
             "</tr>"
         )
 
-    report = f"""<!doctype html>
+        report = f"""<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Scrape results</title>
   <style>
-    body {{ font-family: system-ui, sans-serif; margin: 2rem auto; max-width: 1200px; padding: 0 1rem; }}
-    table {{ border-collapse: collapse; width: 100%; }}
-    th, td {{ border: 1px solid #bbb; padding: .6rem; text-align: left; vertical-align: top; }}
-    th {{ background: #eee; }}
-    .success {{ color: #16803c; font-weight: 700; }}
-    .failure {{ color: #c62828; font-weight: 700; }}
+        :root {{
+            color-scheme: light;
+            --ink: #17212b;
+            --muted: #667382;
+            --line: #d9e0e7;
+            --surface: #ffffff;
+            --canvas: #f5f7f9;
+            --success: #176b45;
+            --success-bg: #e9f5ee;
+            --failure: #a33a34;
+            --failure-bg: #fbeceb;
+        }}
+        * {{ box-sizing: border-box; }}
+        body {{
+            background: var(--canvas);
+            color: var(--ink);
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            line-height: 1.5;
+            margin: 0;
+            padding: 3rem 1.25rem;
+        }}
+        main {{ margin: 0 auto; max-width: 1200px; }}
+        .page-header {{ margin-bottom: 1.5rem; }}
+        h1 {{ font-size: clamp(1.6rem, 3vw, 2.15rem); margin: 0; }}
+        .subtitle {{ color: var(--muted); margin: .4rem 0 0; }}
+        .summary {{
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgb(23 33 43 / 5%);
+            margin-bottom: 1rem;
+            padding: 1rem 1.15rem;
+        }}
+        .table-shell {{
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgb(23 33 43 / 5%);
+            overflow-x: auto;
+        }}
+        table {{ border-collapse: collapse; min-width: 760px; width: 100%; }}
+        th, td {{ border-bottom: 1px solid var(--line); padding: .8rem 1rem; text-align: left; vertical-align: top; }}
+        th {{ background: #f8fafb; color: var(--muted); font-size: .75rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }}
+        tr:last-child td {{ border-bottom: 0; }}
+        tbody tr:hover {{ background: #fbfcfd; }}
+        td {{ font-size: .92rem; }}
+        td:nth-child(1), td:nth-child(2), td:nth-child(3) {{ white-space: nowrap; }}
+        td:nth-child(4) {{ max-width: 32rem; overflow-wrap: anywhere; }}
+        .status {{ display: inline-flex; border-radius: 999px; font-size: .78rem; font-weight: 700; padding: .2rem .55rem; }}
+        .success {{ background: var(--success-bg); color: var(--success); }}
+        .failure {{ background: var(--failure-bg); color: var(--failure); }}
+        @media (max-width: 640px) {{ body {{ padding: 2rem .75rem; }} th, td {{ padding: .7rem .8rem; }} }}
   </style>
 </head>
 <body>
-  <h1>Scrape results</h1>
-  <p>{succeeded} of {len(history)} total scrapes succeeded.</p>
-  <table>
-    <thead><tr><th>Executed</th><th>Workflow run</th><th>Scrape</th><th>URL</th><th>Status</th></tr></thead>
-    <tbody>{''.join(rows)}</tbody>
-  </table>
+    <main>
+        <header class="page-header">
+            <h1>Scrape results</h1>
+            <p class="subtitle">A cumulative record of automated and manual page checks.</p>
+        </header>
+        <section class="summary" aria-label="Summary"><strong>{succeeded} of {len(history)} scrapes succeeded.</strong></section>
+        <div class="table-shell">
+            <table>
+                <thead><tr><th>Executed</th><th>Workflow run</th><th>Scrape</th><th>URL</th><th>Status</th></tr></thead>
+                <tbody>{''.join(rows)}</tbody>
+            </table>
+        </div>
+    </main>
 </body>
 </html>
 """
