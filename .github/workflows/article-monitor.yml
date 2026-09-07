@@ -30,11 +30,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          playwright install --with-deps chromium
       - name: Run scraper
         run: |
           mkdir -p scrape-results
           for run in $(seq 1 "$EXECUTIONS"); do
-            python scrape.py "$TARGET_URL" --output "scrape-results/run-${run}.html" > "scrape-results/run-${run}.stdout.html"
+            python scrape.py "$TARGET_URL" --scroll --output "scrape-results/run-${run}.html" > "scrape-results/run-${run}.stdout.html"
           done
       - name: Upload scrape results
         if: always()

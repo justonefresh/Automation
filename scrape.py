@@ -11,26 +11,61 @@ from curl_cffi import requests
 from curl_cffi.requests import RequestsError
 
 
-def scrape(url: str, output: Path | None = None) -> int:
+def scrape(
+    url: str, output: Path | None = None, scroll: bool = False
+) -> int:
     """Fetch ``url``, print its HTML, and optionally write an HTML report."""
     parsed_url = urlparse(url)
     if parsed_url.scheme not in {"http", "https"} or not parsed_url.netloc:
         print(f"Invalid URL: {url}", file=sys.stderr)
         return 2
 
-    try:
-        response = requests.get(
-            url,
-            impersonate="chrome",
-            timeout=30,
-            allow_redirects=True,
-        )
-        response.raise_for_status()
-    except RequestsError as error:
-        print(f"Request failed: {error}", file=sys.stderr)
-        return 1
+    if scroll:
+        try:
+            from playwright.sync_api import Error as PlaywrightError
+            from playwright.sync_api import sync_playwright
 
-    content = response.text
+            with sync_playwright() as playwright:
+                browser = playwright.chromium.launch(headless=True)
+                page = browser.new_page()
+                page.goto(url, wait_until="domcontentloaded", timeout=30_000)
+                previous_height = 0
+                stable_rounds = 0
+                while stable_rounds < 3:
+                    page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+                    page.wait_for_timeout(500)
+                    current_height = page.evaluate("document.body.scrollHeight")
+                    if current_height == previous_height:
+                        stable_rounds += 1
+                    else:
+                        stable_rounds = 0
+                    previous_height = current_height
+                page.evaluate("window.scrollTo(0, 0)")
+                content = page.content()
+                browser.close()
+        except ImportError:
+            print(
+                "Browser scraping requires Playwright; install requirements.txt first.",
+                file=sys.stderr,
+            )
+            return 1
+        except PlaywrightError as error:
+            print(f"Browser scrape failed: {error}", file=sys.stderr)
+            return 1
+    else:
+        try:
+            response = requests.get(
+                url,
+                impersonate="chrome",
+                timeout=30,
+                allow_redirects=True,
+            )
+            response.raise_for_status()
+        except RequestsError as error:
+            print(f"Request failed: {error}", file=sys.stderr)
+            return 1
+        content = response.text
+
     print(content, end="")
     if output:
         output.parent.mkdir(parents=True, exist_ok=True)
@@ -50,8 +85,13 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("url", help="The webpage URL to scrape")
     parser.add_argument("--output", type=Path, help="Write the fetched page to an HTML file")
+    parser.add_argument(
+        "--scroll",
+        action="store_true",
+        help="Use a browser to scroll from the top to the bottom before capturing the page",
+    )
     args = parser.parse_args()
-    return scrape(args.url, args.output)
+    return scrape(args.url, args.output, args.scroll)
 
 
 if __name__ == "__main__":

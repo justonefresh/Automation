@@ -6,13 +6,13 @@ This project scrapes an authorized webpage with `curl_cffi`. GitHub Actions runs
 
 ```bash
 python -m pip install -r requirements.txt
-python scrape.py https://example.com --output scrape-result.html
+python scrape.py https://example.com --scroll --output scrape-result.html
 ```
 
-The command prints the fetched HTML to stdout and can also save it as an HTML page:
+The command prints the fetched HTML to stdout and can also save it as an HTML page. With `--scroll`, Playwright scrolls from the top to the bottom first so lazy-loaded content is included; the complete scroll is counted as one scrape:
 
 ```bash
-python scrape.py https://example.com --output scrape-result.html
+python scrape.py https://example.com --scroll --output scrape-result.html
 ```
 
 ## GitHub Actions
