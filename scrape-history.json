@@ -2014,5 +2014,13 @@
     "total": 1,
     "url": "https://askfirst.ai/en-s87775",
     "status": "Succeeded"
+  },
+  {
+    "executed_at": "2026-09-13T08:43:50.910329+00:00",
+    "workflow_run": "596",
+    "execution": "1",
+    "total": 1,
+    "url": "https://askfirst.ai/en-s87775",
+    "status": "Succeeded"
   }
 ]
